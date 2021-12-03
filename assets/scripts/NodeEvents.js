@@ -7,7 +7,7 @@ let NodeEvents = (function () {
 
     // 屏幕坐标转换到节点坐标
     function convertToNodeSpace(event) {
-        return cc.find("Canvas").convertToNodeSpaceAR(event.getLocation());
+        return cc.find("Canvas/arrange").convertToNodeSpaceAR(event.getLocation());
     }
 
     // 是否能删除
@@ -16,12 +16,13 @@ let NodeEvents = (function () {
     }
     // 是否在绘制区域
     function atDrawingArea(pos) {
-        let resolution = lcl.BezierData.getResolution();
+       /* let resolution = lcl.BezierData.getResolution();
         let halfW = resolution.width / 2;
         let halfH = resolution.height / 2;
 
         return pos.x > -halfW && pos.x < halfW &&
-            pos.y > -halfH && pos.y < halfH
+            pos.y > -halfH && pos.y < halfH*/
+        return true
     }
 
     // 是否能拖拽
@@ -150,6 +151,16 @@ let NodeEvents = (function () {
             isMouseDown = false;
             moveTargetNode = null;
         });
+
+         // 鼠标滚动
+        canvasNode.on(cc.Node.EventType.MOUSE_WHEEL, (event) => {
+            
+            let s = event._scrollY > 0 ? 0.01 :-0.01;
+            cc.log(event._scrollY)
+            let node = cc.find("Canvas/arrange")
+            node.setScale(node.getScale()+s)
+        });
+        
     }
 
     return _this;

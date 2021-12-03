@@ -25,6 +25,7 @@ cc.Class({
         timeInfo: cc.Label,//实时运行时间
         deleteBtn: cc.Node,//删除按钮
         mouseLocation: cc.Label,//鼠标坐标
+        m_arrangeNode:null
 
     },
 
@@ -42,6 +43,9 @@ cc.Class({
         this.notice = this.infoWindow.getChildByName("notice").getComponent(cc.Label);
         this.fileInputBox = this.infoWindow.getChildByName("Input").getChildByName("fileEditBox").getComponent(cc.EditBox);
         // 控制器面板
+
+        this.m_arrangeNode = this.node.getChildByName("arrange");
+
         let controlPanel = this.node.getChildByName("controlPanel");
         this.moveBtn = controlPanel.getChildByName("moveBtn");
         this.smoothnessInputBox = controlPanel.getChildByName("smoothnessInput").getChildByName("EditBox").getComponent(cc.EditBox);
@@ -57,7 +61,7 @@ cc.Class({
         this.addDeleteBtnEvents();
         this.initResolution();
         // 初始化贝塞尔曲线数据
-        lcl.BezierData.init(this.point, this.control, this.node);
+        lcl.BezierData.init(this.point, this.control, this.m_arrangeNode);
         lcl.BezierData.setBezierCurveRunTime(Number(this.runTimeInputBox.string));
         lcl.BezierData.saveBezierPath();
     },
@@ -80,7 +84,7 @@ cc.Class({
     // 初始化Graphics
     initGraphics() {
         this.ctx = this.graphicsNode.getComponent(cc.Graphics);
-        this.ctx.lineWidth = 2;
+        this.ctx.lineWidth = 2*2;
     },
 
     
@@ -159,7 +163,7 @@ cc.Class({
 
     // 屏幕坐标转换到节点坐标
     convertToNodeSpace(event) {
-        return this.node.convertToNodeSpaceAR(event.getLocation());
+        return this.m_arrangeNode.convertToNodeSpaceAR(event.getLocation());
     },
     // ------------------------【删除节点】---------------------------
     addDeleteBtnEvents() {
@@ -223,13 +227,24 @@ cc.Class({
         let bezierCurveData = lcl.BezierData.getBezierCurveData();
         this.actionLists = [];
         // 创建动作队列
-        for (var i = 0, len = bezierCurveData.points.length; i < len; i++) {
+        for (var i = 1, len = bezierCurveData.points.length; i < len; i++) {
             const point = bezierCurveData.points[i];
+            const prePoint = bezierCurveData.points[i-1];
             //计算当前路段需要的时间
             let time = point.length / bezierCurveData.length * bezierCurveData.time;
             point.time = time;
+
+            let heading = cc.v2(point.x-prePoint.x,point.y-prePoint.y)
+            heading.normalize()
+            let sRightArrow=cc.v2(0,1);
+            
+            let fRadians =  heading.angle(sRightArrow);
+            let fRoatation =  cc.misc.radiansToDegrees(fRadians);
+            fRoatation = heading.x<0?-fRoatation:fRoatation;
             // 创建动作
-            let action = cc.moveTo(time, cc.v2(point.x, point.y));
+            let action =  cc.spawn(cc.moveTo(time, cc.v2(point.x, point.y)),cc.callFunc(() => {
+                this.box.setRotation(fRoatation)
+            }))  ;
             this.actionLists.push(action);
         }
     },
@@ -273,7 +288,7 @@ cc.Class({
         this.resolution[ident] = num;
         lcl.BezierData.setResolution(this.resolution.width, this.resolution.height);
         this.setPaperSize();
-        lcl.BezierData.init(this.point, this.control, this.node);
+        lcl.BezierData.init(this.point, this.control, this.m_arrangeNode);
     },
     setPaperSize(){
         this.paper.width = this.resolution.width;
